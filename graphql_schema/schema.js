@@ -5,37 +5,18 @@ const Complaint = require('../models/Complaint')
 const Notification = require('../models/Notification')
 
 const {makeExecutableSchema} = require('graphql-tools')
-const {verifyToken, DEFAULTS, checkAllOptions, AO} = require('../utils')
-
-const CONST_AUTH_HEADER = 'Authorization'
-
-const checkAdminDetails = (token) => {
-    // console.log(token)
-    const data = verifyToken(token)
-    if(data === null) throw new Error("Null Token") 
-    if(data.username === process.env.APP_CSAIGMC_USERNAME && data.id === process.env.APP_CSAIGMC_CLIENT_ID) {
-        return true
-    }
-    throw new Error('Token Not Found')
-}
-
-const getAuthToken = (req) => {
-    const data = req.header(CONST_AUTH_HEADER)
-    if(!data) {
-        throw new Error("Forbidden")
-    } else {
-        const token = data.split(' ')[1]
-        if(!token) {
-            return new Error('Forbidden') 
-        } else {
-            return token
-        }
-    }
-}
+const {
+    DEFAULTS,
+    checkAllOptions,
+    AO,
+    checkAdminDetails,
+    getAuthToken
+} = require('../utils')
 
 const typeDefs = `
 type Student {
-    roll_no: ID!
+    _id: ID!
+    roll_no: String
     first_name: String
     last_name: String
     country_code: String
@@ -58,6 +39,8 @@ type Article {
     _id: ID!
     author: String
     about_author: String
+    article_type: String
+    title: String
     text: String
     create_date: String
 }
@@ -97,10 +80,12 @@ input InpArticle {
     author: String
     about_author: String
     text: String
+    title: String
+    article_type: String
 }
 
 input InpComplaint {
-    compaint_message: String
+    complaint_message: String
     complaint_status: String
 }
 
@@ -114,6 +99,7 @@ input InpOptions {
     limit: Int
     sort_by: String
     after: String
+    type: String
 }
 
 type Query {
@@ -132,24 +118,24 @@ type Query {
 
 type Mutation{
     addStudent(student: InpStudent): Student
-    deleteStudent(roll_no: String): String
-    updateStudent(roll_no: ID!, student: InpStudent): Student 
+    deleteStudent(roll_no: ID!): Student
+    updateStudent(id: ID!, student: InpStudent): Student 
     
     addArt(art: InpArt): Art
-    deleteArt(id: ID!): String
+    deleteArt(id: ID!): Art
     updateArt(id: ID!, art: InpArt): Art
     
     addArticle(article: InpArticle): Article
-    deleteArticle(id: ID!): String
-    updateArticle(id: ID!, art: InpArticle): Article 
+    deleteArticle(id: ID!): Article
+    updateArticle(id: ID!, article: InpArticle): Article 
     
     addComplaint(complaint: InpComplaint): Complaint
     updateComplaint(id: ID!, complaint: InpComplaint): Complaint
-    deleteComplaint(id: ID!): String
+    deleteComplaint(id: ID!): Complaint
     
     addNotification(notification: InpNotification): Notification
     updateNotification(id: ID!, notification: InpNotification): Notification
-    deleteNotification(id: ID!): String
+    deleteNotification(id: ID!): Notification
 }
 
 type Schema {
@@ -182,6 +168,8 @@ const resolvers = {
         },
         async allStudents(_, {options}) {
             const foptions = checkAllOptions(options, DEFAULTS.Student)
+            console.log('....')
+            console.log(foptions)
             const info = await Student.find({
                 create_date: {$gte: new Date(foptions[AO.AFTER])}
             }).
@@ -191,7 +179,6 @@ const resolvers = {
             return info
         },
         async allArts(_, {options}) {
-
             const foptions = checkAllOptions(options, DEFAULTS.Art)
             const info = await Art.find({
                 create_date: {$gte: new Date(foptions[AO.AFTER])}
@@ -202,10 +189,15 @@ const resolvers = {
             return info
         },
         async allArticles(_, {options}) {
+            const article_type = options.type
+            if(typeof(article_type) === 'undefined') {
+                throw new Error("article_type Not specified in request!")
+            }
 
             const foptions = checkAllOptions(options, DEFAULTS.Article)
             const info = await Article.find({
-                create_date: {$gte: new Date(foptions[AO.AFTER])}
+                create_date: {$gte: new Date(foptions[AO.AFTER])},
+                article_type
             }).
             skip(foptions[AO.SKIP]).
             limit(foptions[AO.LIMIT]).
@@ -247,18 +239,20 @@ const resolvers = {
             if(r === true) {
                 const stud = await Student.findOneAndRemove({roll_no})
                 if(stud === null) {
-                    return "Error Not Found"
+                    throw new Erro("Error Not Found")
                 }
-                return "Successfully deleted student"
+                return stud
             }
             return null
         },
-        async updateStudent(_, {roll_no, student}, {req}) {
+        async updateStudent(_, {id, student}, {req}) {
             const r = checkAdminDetails(getAuthToken(req))
+            console.log("___updating_user____")
+            console.log(id)
+            console.log(student)
             if(r === true) {
-                const prevStud = await Student.findOne({roll_no})
-                const result = await Student.updateOne({roll_no}, student)
-                const newStud = await Student.findOne({_id: prevStud._id})
+                const result = await Student.updateOne({_id: id}, student)
+                const newStud = await Student.findOne({_id: id})
                 return newStud
             }
             return null
@@ -279,9 +273,9 @@ const resolvers = {
             if(r === true) {
                 const result = await Art.findOneAndRemove({_id: id})
                 if(result === null) {
-                    return "Error deleting Art"
+                    throw new Error("Error deleting Art")
                 } 
-                return "Successfully deleted Art"
+                return result
             }
             return null
         },
@@ -310,16 +304,16 @@ const resolvers = {
             if(r === true) {
                 const result = Article.findOneAndRemove({_id: id})
                 if(result === null){
-                    return "Error deleting Article"
+                    throw new Error("Error deleting Article")
                 }
-                return "done deleting article"
+                return result
             }
             return null
         },
-        async updateArticle(_, {id, art}, {req}) {
+        async updateArticle(_, {id, article}, {req}) {
             const r = checkAdminDetails(getAuthToken(req))
             if(r === true) {
-                const result = await Article.updateOne({_id: id}, art)
+                const result = await Article.updateOne({_id: id}, article)
                 const newArticle = await Article.findOne({_id: id})
                 return newArticle
             }
@@ -346,7 +340,7 @@ const resolvers = {
         async updateComplaint(_, {id, complaint}, {req}) {
             const r = checkAdminDetails(getAuthToken(req))
             if(r === true) {
-                const result = await Complaint.updateOne({_id: id}, art)
+                const result = await Complaint.updateOne({_id: id}, complaint)
                 const newComplaint = await Complaint.findOne({_id: id})
                 return newComplaint
             }
@@ -357,7 +351,7 @@ const resolvers = {
         async addNotification(_, {notification}, {req}) {
             const r = checkAdminDetails(getAuthToken(req))
             if(r === true) {
-                const notif = new Notification(article)
+                const notif = new Notification(notification)
                 const result = await notif.save()
                 return result
             }
@@ -368,16 +362,18 @@ const resolvers = {
             if(r === true) {
                 const result = Notification.findOneAndRemove({_id: id})
                 if(result === null){
-                    return "Error deleting Notification"
+                    throw new Error("Error deleting Notification")
                 }
-                return "done deleting notification"
+                return result
             }
             return null
         },
-        async updateNotification(_, {id, art}, {req}) {
+        async updateNotification(_, {id, notification}, {req}) {
+            console.log(id)
+            console.log(notification)
             const r = checkAdminDetails(getAuthToken(req))
             if(r === true) {
-                const result = await Notification.updateOne({_id: id}, art)
+                const result = await Notification.updateOne({_id: id}, notification)
                 const newNotification = await Notification.findOne({_id: id})
                 return newNotification
             }

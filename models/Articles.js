@@ -9,10 +9,18 @@ const Article = new mongoose.Schema({
         type: String,
         maxlength: 1024
     },
+    title: {
+        type: String,
+        maxlength: 1024,
+    },
     text: {
         type: String,
         maxlength: 0x1 << 16,
         required: true
+    },
+    article_type: {
+        type: String,
+        enum: ['enigma', 'isis']
     },
     create_date: {
         type: Date,
