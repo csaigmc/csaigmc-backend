@@ -35,7 +35,7 @@ app.use('/user', userRouter)
 app.use('/graphql', (req, res) => {
   return graphqlHttp({
     schema,
-    graphiql: true,
+    graphiql: (process.env.APP_CSAIGMC_MODE === 'dev' ? true : false),
     context: {req}
   })(req, res)
 })
