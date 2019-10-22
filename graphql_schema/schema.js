@@ -31,7 +31,9 @@ type Art {
     creator: String
     about_creator: String
     url_path: String
+    art_format: String
     art_type: String
+    is_meme: Boolean
     create_date: String
 }
 
@@ -73,7 +75,9 @@ input InpArt {
     creator: String
     about_creator: String
     url_path: String
+    art_format: String
     art_type: String
+    is_meme: Boolean
 }
 
 input InpArticle {
@@ -179,8 +183,14 @@ const resolvers = {
             return info
         },
         async allArts(_, {options}) {
+            const art_type = options.type
+            if(typeof(art_type) === 'undefined') {
+                throw new Error("Type Not specified in request!")
+            }
+
             const foptions = checkAllOptions(options, DEFAULTS.Art)
             const info = await Art.find({
+                art_type,
                 create_date: {$gte: new Date(foptions[AO.AFTER])}
             }).
             skip(foptions[AO.SKIP]).
