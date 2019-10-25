@@ -12,7 +12,7 @@ const Art = new mongoose.Schema({
     },
     art_type: {
         type: String,
-        enum: ['student', 'meme', 'art'],
+        enum: ['student', 'meme', 'art', 'teacher'],
         required: true
     },
     url_path: {
