@@ -17,8 +17,7 @@ const Art = new mongoose.Schema({
     },
     url_path: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     art_format: {
         type: String,
