@@ -20,10 +20,7 @@ const User = new mongoose.Schema({
         required: true
     },
     phone_no: {
-        type: String,
-        maxlength: 10,
-        minlength: 10,
-        match: /[0-9]{10}/
+        type: String
     },
     email: {
         type: String
