@@ -3,6 +3,7 @@ const Art = require('../models/Arts')
 const Article = require('../models/Articles')
 const Complaint = require('../models/Complaint')
 const Notification = require('../models/Notification')
+const User = require('../models/User')
 
 const {makeExecutableSchema} = require('graphql-tools')
 const {
@@ -34,6 +35,17 @@ type Art {
     art_format: String
     art_type: String
     is_meme: Boolean
+    create_date: String
+}
+
+type User {
+    _id: ID!
+    user: String
+    about_user: String
+    user_type: String
+    url_path: String
+    phone_no: String
+    email: String
     create_date: String
 }
 
@@ -80,6 +92,15 @@ input InpArt {
     is_meme: Boolean
 }
 
+input InpUser {
+    user: String
+    about_user: String
+    user_type: String
+    url_path: String
+    phone_no: String
+    email: String
+}
+
 input InpArticle {
     author: String
     about_author: String
@@ -112,12 +133,14 @@ type Query {
     article(id: ID!): Article
     complaint(id: ID!): Complaint
     notification(id: ID!): Notification
+    user(id: ID!): User
     
     allStudents(options: InpOptions): [Student]
     allArts(options: InpOptions): [Art]
     allArticles(options: InpOptions): [Article]
     allComplaints(options: InpOptions): [Complaint]
     allNotifications(options: InpOptions): [Notification]
+    allUsers(options: InpOptions): [User]
 }
 
 type Mutation{
@@ -128,6 +151,10 @@ type Mutation{
     addArt(art: InpArt): Art
     deleteArt(id: ID!): Art
     updateArt(id: ID!, art: InpArt): Art
+
+    addUser(user: InpUser): User
+    deleteUser(id: ID!): User
+    updateUser(id: ID!, user: InpUser): User
     
     addArticle(article: InpArticle): Article
     deleteArticle(id: ID!): Article
@@ -156,6 +183,10 @@ const resolvers = {
         },
         async art(_, {id}) {
             const info = await Art.findOne({_id: id})
+            return info
+        },
+        async user(_, {id}) {
+            const info = await User.findOne({_id: id})
             return info
         },
         async article(_, {id}) {
@@ -191,6 +222,22 @@ const resolvers = {
             const foptions = checkAllOptions(options, DEFAULTS.Art)
             const info = await Art.find({
                 art_type,
+                create_date: {$gte: new Date(foptions[AO.AFTER])}
+            }).
+            skip(foptions[AO.SKIP]).
+            limit(foptions[AO.LIMIT]).
+            sort(foptions[AO.SORT_BY]).exec()
+            return info
+        },
+        async allUsers(_, {options}) {
+            const user_type = options.type
+            if(typeof(user_type) === 'undefined') {
+                throw new Error("Type Not specified in request!")
+            }
+
+            const foptions = checkAllOptions(options, DEFAULTS.User)
+            const info = await User.find({
+                user_type,
                 create_date: {$gte: new Date(foptions[AO.AFTER])}
             }).
             skip(foptions[AO.SKIP]).
@@ -294,6 +341,37 @@ const resolvers = {
             if(r === true) {
                 const result = await Art.updateOne({_id: id}, art)
                 const updatedValue = await Art.findOne({_id: id})
+                return updatedValue
+            }
+            return null
+        },
+
+        // User
+        async addUser(_, {user}, {req}) {
+            const r = checkAdminDetails(getAuthToken(req))
+            if(r === true) {
+                const nuser = new User(user)
+                const result = await nuser.save()
+                return result
+            }
+            return null
+        },
+        async deleteUser(_, {id}, {req}) {
+            const r = checkAdminDetails(getAuthToken(req))
+            if(r === true) {
+                const result = await User.findOneAndRemove({_id: id})
+                if(result === null) {
+                    throw new Error("Error deleting User")
+                } 
+                return result
+            }
+            return null
+        },
+        async updateUser(_, {id, user}, {req}) {
+            const r = checkAdminDetails(getAuthToken(req))
+            if(r === true) {
+                const result = await User.updateOne({_id: id}, user)
+                const updatedValue = await User.findOne({_id: id})
                 return updatedValue
             }
             return null

@@ -34,6 +34,12 @@ const DEFAULTS = {
         [AO.SKIP]: 0,
         [AO.AFTER]: BEF_DATE_STRING
     },
+    User: {
+        [AO.SORT_BY]: "-create_date",
+        [AO.LIMIT]: parseInt(process.env.APP_CSAIGMC_CURRENT_LIMIT_PER_PAGE),
+        [AO.SKIP]: 0,
+        [AO.AFTER]: BEF_DATE_STRING
+    },
     Article: {
         [AO.SORT_BY]: "-create_date",
         [AO.LIMIT]: parseInt(process.env.APP_CSAIGMC_CURRENT_LIMIT_PER_PAGE),

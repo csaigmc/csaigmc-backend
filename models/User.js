@@ -1,28 +1,32 @@
 const mongoose = require('mongoose')
 
-const Art = new mongoose.Schema({
-    creator: {
+const User = new mongoose.Schema({
+    user: {
         type: String,
         maxlength: 512,
         default: null
     },
-    about_creator: {
+    about_user: {
         type: String,
         maxlength: 1024
     },
-    art_type: {
+    user_type: {
         type: String,
-        enum: ['gallery', 'meme', 'art'],
+        enum: ['student','teacher'],
         required: true
     },
     url_path: {
         type: String,
         required: true
     },
-    art_format: {
+    phone_no: {
         type: String,
-        required: true,
-        enum: ['video', 'image']
+        maxlength: 10,
+        minlength: 10,
+        match: /[0-9]{10}/
+    },
+    email: {
+        type: String
     },
     create_date: {
         type: Date,
@@ -30,4 +34,4 @@ const Art = new mongoose.Schema({
     }
 })
 
-module.exports = new mongoose.model("Art", Art)
+module.exports = new mongoose.model("User", User)
