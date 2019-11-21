@@ -10,6 +10,10 @@ const Notification = new mongoose.Schema({
         type: String,
         required: true
     },
+    notification_type: {
+        type: String,
+        enum: ['notification', 'paper']
+    },
     create_date: {
         type: Date,
         default: Date.now

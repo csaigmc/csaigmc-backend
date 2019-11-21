@@ -70,6 +70,7 @@ type Notification {
     _id: ID!,
     notification_text: String
     notification_url: String
+    notification_type: String
     create_date: String
 }
 
@@ -117,6 +118,7 @@ input InpComplaint {
 input InpNotification {
     notification_text: String
     notification_url: String
+    notification_type: String
 }
 
 input InpOptions {
@@ -273,10 +275,15 @@ const resolvers = {
             return info
         },
         async allNotifications(_, {options}) {
+            const notification_type = options.type
+            if(typeof(notification_type) === 'undefined') {
+                throw new Error("notification_type Not specified in request!")
+            }
 
             const foptions = checkAllOptions(options, DEFAULTS.Notification)
             const info = await Notification.find({
-                create_date: {$gte: foptions[AO.AFTER]}
+                create_date: {$gte: foptions[AO.AFTER]},
+                notification_type
             }).
             skip(foptions[AO.SKIP]).
             limit(foptions[AO.LIMIT]).
