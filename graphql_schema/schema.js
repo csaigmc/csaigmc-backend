@@ -423,12 +423,18 @@ const resolvers = {
         },
         async deleteComplaint(_, {id}, {req}) {
             const r = checkAdminDetails(getAuthToken(req))
+            console.log("data")
+            // console.log("__Trying to delete complaint___")
+            // console.log("Obtained Data")
+            // console.log(id)
+            // console.log("___END OF INFO__")
             if(r === true) {
                 const result = Complaint.findOneAndRemove({_id: id})
                 if(result === null){
+                    console.log("--ERROR REMOVED COMPLAINT--")
                     return "Error deleting Article"
                 }
-                return "done deleting article"
+                return result
             }
             return null
         },
